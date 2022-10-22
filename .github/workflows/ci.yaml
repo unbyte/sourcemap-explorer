@@ -1,0 +1,93 @@
+name: CI
+on:
+  pull_request:
+  push:
+
+jobs:
+  style-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - uses: pnpm/action-setup@v2.0.1
+        with:
+          version: 7
+      - id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev webkit2gtk-4.0 libappindicator3-dev librsvg2-dev patchelf
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ steps.rustup.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/cache@v2
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - run: |
+          pnpm install --frozen-lockfile
+          pnpm run fmt --check && pnpm run lint
+          
+
+  release:
+    needs: style-check
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, ubuntu-20.04, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - uses: pnpm/action-setup@v2.0.1
+        with:
+          version: 7
+      - id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - if: matrix.platform == 'ubuntu-20.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev webkit2gtk-4.0 libappindicator3-dev librsvg2-dev patchelf
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ steps.rustup.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/cache@v2
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - run: pnpm install --frozen-lockfile
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref }}
+          releaseName: ${{ github.ref }}
+          releaseBody: "See the assets to download this version and install."
+          tauriScript: pnpm tauri
+          releaseDraft: true
+          prerelease: false
