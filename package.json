@@ -1,0 +1,60 @@
+{
+  "name": "sourcemap-explorer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "prepare": "is-ci || husky install",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "dev:ui": "vite",
+    "build:ui": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "zx ./scripts/style.mjs --lint",
+    "fmt": "zx ./scripts/style.mjs --fmt"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1.1.0",
+    "vue": "^3.2.37"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.1.1",
+    "@types/node": "^18.11.3",
+    "@typescript-eslint/parser": "^5.40.1",
+    "@vitejs/plugin-vue": "^3.1.0",
+    "@vitejs/plugin-vue-jsx": "^2.0.1",
+    "commander": "^9.4.1",
+    "eslint": "^8.26.0",
+    "husky": "^8.0.1",
+    "is-ci": "^3.0.1",
+    "lint-staged": "^13.0.3",
+    "prettier": "^2.7.1",
+    "typescript": "^4.6.4",
+    "vite": "^3.1.0",
+    "vue-tsc": "^0.40.4",
+    "zx": "^7.1.1"
+  },
+  "prettier": {
+    "printWidth": 80,
+    "semi": false,
+    "trailingComma": "all",
+    "singleQuote": true,
+    "arrowParens": "always",
+    "bracketSpacing": true
+  },
+  "eslintConfig": {
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "sourceType": "module"
+    },
+    "rules": {
+      "no-debugger": "error"
+    }
+  },
+  "lint-staged": {
+    "*.{mjs,js,ts,tsx}": [
+      "eslint --fix --max-warnings 0",
+      "prettier --write --ignore-unknown"
+    ]
+  }
+}
